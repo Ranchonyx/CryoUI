@@ -1,0 +1,10 @@
+.AppComponent {
+    background-color: var(--app-background-color);
+    width: 100%;
+
+    padding: unset;
+
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}

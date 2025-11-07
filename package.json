@@ -1,0 +1,21 @@
+{
+  "name": "CryoUI",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev-fe": "node frontend_live.mjs",
+    "dev-be": "node backend.mjs && copy dist\\backend.css public /y && copy dist\\backend.css.map public /y && node dist/backend.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  },
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@types/node": "^24.10.0",
+    "cryo-client-browser": "^1.0.2",
+    "cryo-server": "^2.5.0",
+    "esbuild": "^0.25.12"
+  }
+}

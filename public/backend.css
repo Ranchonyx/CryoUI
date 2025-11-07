@@ -1,0 +1,119 @@
+/* src/UI/Base/BaseComponent/BaseComponent.module.css */
+.BaseComponent_BaseComponent {
+  box-sizing: border-box;
+  max-width: 100%;
+  background-color: var(--component-background-color);
+  user-select: none;
+}
+
+/* src/UI/Components/AppComponent/AppComponent.module.css */
+.AppComponent_AppComponent {
+  background-color: var(--app-background-color);
+  width: 100%;
+  padding: unset;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* src/UI/Layouts/TwoColumnsLayout/TwoColumnsLayout.module.css */
+.TwoColumnsLayout_TwoColumnsLayout {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: 100%;
+  background-color: var(--color-cyan);
+  height: 100%;
+}
+.TwoColumnsLayout_TwoColumnsLayout > :first-child,
+.TwoColumnsLayout_TwoColumnsLayout > :last-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* src/UI/Layouts/GridLayout/GridLayout.module.css */
+.GridLayout_GridLayout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--grid-gap);
+  height: 100%;
+  align-content: start;
+  overflow-y: auto;
+  padding: var(--component-padding);
+}
+
+/* src/UI/Components/GridItemComponent/GridItemComponent.module.css */
+.GridItemComponent_GridItemComponent {
+  justify-self: stretch;
+  align-self: stretch;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: var(--component-background-color);
+  border: 1px solid var(--component-border-color);
+  border-radius: var(--grid-item-radius);
+  box-shadow: var(--component-shadow);
+  color: var(--text-color);
+}
+.GridItemComponent_GridItemComponent > * {
+  user-select: none;
+}
+
+/* src/UI/Components/ParagraphComponent/ParagraphComponent.module.css */
+.ParagraphComponent_ParagraphComponent {
+  text-align: left;
+  padding: 0 var(--component-padding);
+  user-select: text;
+}
+
+/* src/UI/Components/NavbarComponent/NavbarComponent.module.css */
+.NavbarComponent_NavbarComponent {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: 100%;
+  border-bottom: 1px solid black;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--navbar-background-color);
+  color: var(--text-on-dark);
+  padding: var(--navbar-padding);
+}
+.NavbarComponent_tabs,
+.NavbarComponent_buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  background-color: var(--navbar-item-background-color);
+  color: var(--text-on-dark);
+}
+.NavbarComponent_tabs > * {
+  min-width: 10rem;
+  background-color: var(--tab-background);
+}
+.NavbarComponent_tabs > *:hover {
+  background-color: var(--tab-hover-background);
+}
+.NavbarComponent_buttons > * {
+  min-width: 2.5rem;
+  background-color: var(--button-background);
+}
+.NavbarComponent_buttons > *:hover {
+  background-color: var(--button-hover-background);
+}
+
+/* src/UI/Components/HeaderComponent/HeaderComponent.module.css */
+.HeaderComponent_HeaderComponent {
+  text-align: left;
+  padding: 0 var(--component-padding);
+  user-select: text;
+}
+/*# sourceMappingURL=backend.css.map */

@@ -1,0 +1,15 @@
+.TwoColumnsLayout {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+    background-color: var(--color-cyan);
+
+    height: 100%;
+}
+
+.TwoColumnsLayout > :first-child,
+.TwoColumnsLayout > :last-child {
+    flex: 1 1 0;
+    min-width: 0;
+}

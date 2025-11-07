@@ -1,0 +1,50 @@
+.NavbarComponent {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+
+    border-bottom: 1px solid black;
+    align-items: center;
+    justify-content: space-between;
+
+    background-color: var(--navbar-background-color);
+    color: var(--text-on-dark);
+    padding: var(--navbar-padding);
+}
+
+.tabs,
+.buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    background-color: var(--navbar-item-background-color);
+    color: var(--text-on-dark);
+    /*
+    border-radius: var(--navbar-item-radius);
+    */
+}
+
+.tabs > * {
+    min-width: 10rem;
+    background-color: var(--tab-background);
+}
+
+.tabs > *:hover {
+    background-color: var(--tab-hover-background);
+}
+
+.buttons > * {
+    min-width: 2.5rem;
+    background-color: var(--button-background);
+}
+
+.buttons > *:hover {
+    background-color: var(--button-hover-background);
+}

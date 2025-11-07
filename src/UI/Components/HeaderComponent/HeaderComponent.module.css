@@ -1,0 +1,5 @@
+.HeaderComponent {
+    text-align: left;
+    padding: 0 var(--component-padding);
+    user-select: text;
+}

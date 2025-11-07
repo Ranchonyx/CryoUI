@@ -1,0 +1,11 @@
+.GridLayout {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--grid-gap);
+
+    height: 100%;
+    align-content: start;
+    overflow-y: auto;
+
+    padding: var(--component-padding);
+}
