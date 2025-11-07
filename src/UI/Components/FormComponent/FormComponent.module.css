@@ -1,0 +1,6 @@
+.FormComponent {
+    background-color: var(--component-background-color);
+
+    display: flex;
+    flex-direction: column;
+}

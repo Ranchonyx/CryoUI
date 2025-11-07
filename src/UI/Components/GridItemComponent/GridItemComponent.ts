@@ -22,7 +22,6 @@ export class GridItemComponent extends BaseComponent {
     public handleEvent(event: ComponentEvent) {
         switch (event.type) {
             case "click":
-                console.log(`click on ${this.id}`);
                 (this.item as ParagraphComponent).setContent(`${Math.random()}`);
                 break;
             default:

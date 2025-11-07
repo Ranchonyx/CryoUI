@@ -1268,7 +1268,7 @@ async function cryo(pTokenValidator, options) {
 __name(cryo, "cryo");
 
 // src/core/ComponentTree.ts
-var ComponentTree = class {
+var ComponentTree = class _ComponentTree {
   constructor(root) {
     this.root = root;
     root.onMounted?.();
@@ -1276,6 +1276,7 @@ var ComponentTree = class {
   static {
     __name(this, "ComponentTree");
   }
+  static repaintQueue = [];
   findById(id, current = this.root) {
     return current.findById(id);
   }
@@ -1323,17 +1324,47 @@ var ComponentTree = class {
     replacee.parent = parent;
     replacee.onMounted?.();
   }
+  async getUpdatedComponents() {
+    const components = [];
+    while (_ComponentTree.repaintQueue.length > 0) {
+      const toUpdate = _ComponentTree.repaintQueue.pop();
+      components.push({ target: toUpdate.id, html: await toUpdate.renderRecursive() });
+    }
+    return components;
+  }
 };
+
+// src/UI/Base/BaseComponent/BaseComponent.ts
+import { randomUUID } from "node:crypto";
 
 // src/UI/Base/BaseComponent/BaseComponent.module.css
 var BaseComponent = "BaseComponent_BaseComponent";
 
 // src/UI/Base/BaseComponent/BaseComponent.ts
+var UUIDPool = class _UUIDPool {
+  static {
+    __name(this, "UUIDPool");
+  }
+  static _instance = void 0;
+  uuids = /* @__PURE__ */ new Set();
+  get() {
+    const newUUID = randomUUID();
+    if (this.uuids.has(newUUID))
+      return this.get();
+    this.uuids.add(newUUID);
+    return newUUID;
+  }
+  static get Instance() {
+    if (!_UUIDPool._instance)
+      _UUIDPool._instance = new _UUIDPool();
+    return _UUIDPool._instance;
+  }
+};
 var BaseComponent2 = class {
   constructor(id, className, styleOverrides) {
     this.className = className;
     this.styleOverrides = styleOverrides;
-    this.id = `${id}-${crypto.randomUUID()}`;
+    this.id = `${id}-${UUIDPool.Instance.get()}`;
   }
   static {
     __name(this, "BaseComponent");
@@ -1342,7 +1373,10 @@ var BaseComponent2 = class {
   parent;
   children = [];
   events = [];
+  dirty = false;
   async renderRecursive() {
+    if (this.dirty)
+      this.dirty = false;
     const rendered = await this.render();
     let computedStyle = "";
     let dataEvent = "";
@@ -1371,6 +1405,9 @@ var BaseComponent2 = class {
         return found;
     }
     return null;
+  }
+  repaint() {
+    ComponentTree.repaintQueue.push(this);
   }
 };
 
@@ -1508,7 +1545,6 @@ var GridItemComponent2 = class extends BaseComponent2 {
   handleEvent(event) {
     switch (event.type) {
       case "click":
-        console.log(`click on ${this.id}`);
         this.item.setContent(`${Math.random()}`);
         break;
       default:
@@ -1608,6 +1644,66 @@ var HeaderComponent2 = class extends BaseComponent2 {
 
 // src/backend.ts
 import { inspect } from "node:util";
+
+// src/UI/Components/FormComponent/FormComponent.module.css
+var FormComponent = "FormComponent_FormComponent";
+
+// src/UI/Components/FormComponent/FormComponent.ts
+var FormComponent2 = class extends BaseComponent2 {
+  constructor(inputs) {
+    super("FORM", FormComponent);
+    this.inputs = inputs;
+    for (const input of inputs)
+      this.addChild(input);
+  }
+  static {
+    __name(this, "FormComponent");
+  }
+  events = ["submit"];
+  async render() {
+    const rendered = await Promise.all(this.children.map((child) => child.renderRecursive()));
+    const renderedSubmissiveButton = `<input type="submit" value="Submit"/>`;
+    return `<form>${rendered.join("")}${renderedSubmissiveButton}></form>`;
+  }
+  handleEvent(event) {
+    switch (event.type) {
+      case "submit":
+        let cur = this;
+        while (cur?.parent !== void 0) {
+          cur = cur?.parent;
+        }
+        const frame = cur.children.find((child) => child instanceof TwoColumnsLayout2).children.find((child) => child instanceof FrameComponent);
+        frame?.addChild(new ParagraphComponent2(`YOUR COCK IS ${event.data.cockSz} UNITS OF MEASUREMENTS BIG.`));
+        frame?.repaint();
+        break;
+      default:
+        return;
+    }
+  }
+};
+
+// src/UI/Components/InputComponent/InputComponent.module.css
+var InputComponent = "InputComponent_InputComponent";
+
+// src/UI/Components/InputComponent/InputComponent.ts
+var InputComponent2 = class extends BaseComponent2 {
+  constructor(label, key, type = "text") {
+    super("INPUT", InputComponent);
+    this.label = label;
+    this.key = key;
+    this.type = type;
+  }
+  static {
+    __name(this, "InputComponent");
+  }
+  async render() {
+    const input = `<input required id="__${this.id}" step="0.01" name="${this.key}" type="${this.type}" />`;
+    const label = `<label for="__${this.id}">${this.label}</label>`;
+    return `${label}${input}`;
+  }
+};
+
+// src/backend.ts
 var PORT = 8080;
 var Validator = class {
   static {
@@ -1617,18 +1713,18 @@ var Validator = class {
     return token === "test";
   }
 };
-var server = await cryo(new Validator(), { use_cale: false, port: PORT, keepAliveIntervalMs: 6e4 });
+var server = await cryo(new Validator(), { use_cale: false, port: PORT, keepAliveIntervalMs: 5e3 });
 server.on("session", async (session) => {
   console.log(`New session '${session.id}' connected!`);
   const app = new AppComponent2(
     new NavbarComponent2(
       [
-        new ParagraphComponent2("Btn1"),
-        new ParagraphComponent2("Btn2")
+        new ParagraphComponent2("Btn 1"),
+        new ParagraphComponent2("Btn 2")
       ],
       [
-        new ParagraphComponent2("Tab1"),
-        new ParagraphComponent2("Tab2")
+        new ParagraphComponent2("Tab 1"),
+        new ParagraphComponent2("Tab 2")
       ]
     ),
     new TwoColumnsLayout2(
@@ -1644,7 +1740,12 @@ server.on("session", async (session) => {
       ),
       new FrameComponent([
         new HeaderComponent2("Fantastic fucking header right here!"),
-        new ParagraphComponent2(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`)
+        new ParagraphComponent2(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`),
+        new FormComponent2([
+          new InputComponent2("Size of cock", "cockSz", "number"),
+          new InputComponent2("Your name", "urName", "text"),
+          new InputComponent2("Your d.o.b", "urDob", "date")
+        ])
       ])
     )
   );
@@ -1655,9 +1756,17 @@ server.on("session", async (session) => {
     console.log(`Received UIEvent '${type}' on '${target}' with data '${inspect(data, false, 6, true)}'`);
     tree.dispatchEvent({ target, data, type });
     const html = await tree.renderById(target);
-    if (!html)
+    if (html) {
+      console.info(`UIEvent '${type}' on '${target}' => '${target}' was re-rendered!`);
+      await session.SendUTF8(JSON.stringify({ target, html }));
+    }
+    const maybeRepainted = await tree.getUpdatedComponents();
+    if (maybeRepainted.length === 0)
       return;
-    await session.SendUTF8(JSON.stringify({ target, html }));
+    console.info(`UIEvent '${type}' on '${target}' => '${maybeRepainted.length}' components were re-rendered!`);
+    for (const { target: target2, html: html2 } of maybeRepainted) {
+      await session.SendUTF8(JSON.stringify({ target: target2, html: html2 }));
+    }
   });
   session.on("closed", () => {
     console.log(`Session '${session.id}' closed`);

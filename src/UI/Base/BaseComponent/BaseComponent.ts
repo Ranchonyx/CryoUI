@@ -1,15 +1,40 @@
+import {randomUUID, UUID} from "node:crypto";
+
 export type CommonEvents = "click" | "input" | "change" | "contextmenu" | "submit" | "keydown";
-export type ComponentEvent<K = CommonEvents | string, T = any> = { type: K, target: string, data: T };
+export type ComponentEvent<T = any> = { type: CommonEvents, target: string, data: T };
 import {BaseComponent as className} from "./BaseComponent.module.css"
+import {ComponentTree} from "../../../core/ComponentTree.js";
+
+class UUIDPool {
+    private static _instance: UUIDPool | undefined = undefined;
+    private uuids: Set<UUID> = new Set();
+
+    public get(): UUID {
+        const newUUID = randomUUID();
+        if (this.uuids.has(newUUID))
+            return this.get();
+
+        this.uuids.add(newUUID);
+        return newUUID;
+    }
+
+    public static get Instance(): UUIDPool {
+        if (!UUIDPool._instance)
+            UUIDPool._instance = new UUIDPool();
+
+        return UUIDPool._instance;
+    }
+}
 
 export abstract class BaseComponent {
     public id: string;
     public parent?: BaseComponent;
     public children: BaseComponent[] = []
     public events?: CommonEvents[] = [];
+    private dirty: boolean = false;
 
     protected constructor(id: string, public className: string, public styleOverrides?: Record<string, string>) {
-        this.id = `${id}-${crypto.randomUUID()}`
+        this.id = `${id}-${UUIDPool.Instance.get()}`
     }
 
     public handleEvent?(event: ComponentEvent): void;
@@ -21,9 +46,8 @@ export abstract class BaseComponent {
     protected abstract render(): Promise<string>;
 
     public async renderRecursive(): Promise<string> {
-/*
-        console.info(`Rendering ${this.className} ...`);
-*/
+        if (this.dirty)
+            this.dirty = false;
         const rendered = await this.render();
 
         let computedStyle = "";
@@ -65,4 +89,7 @@ export abstract class BaseComponent {
         return null;
     }
 
+    public repaint(): void {
+        ComponentTree.repaintQueue.push(this);
+    }
 }

@@ -1,6 +1,10 @@
 import {BaseComponent, ComponentEvent} from "../UI/Base/BaseComponent/BaseComponent.js";
 
+//TODO: "dirty"-Flag implementieren. Wird gesetzt wenn die Komponente modifiziert wurde. Umsetzen via Proxies!
+
 export class ComponentTree {
+    public static repaintQueue: BaseComponent[] = [];
+
     public constructor(public root: BaseComponent) {
         root.onMounted?.();
     }
@@ -56,7 +60,7 @@ export class ComponentTree {
 
     public replaceComponent(id: string, replacee: BaseComponent): void {
         const parent = this.findParentOf(id);
-        if(!parent)
+        if (!parent)
             throw new Error(`Parent component of component '${id}' could not be found!`);
 
         parent.removeChild(id);
@@ -64,5 +68,15 @@ export class ComponentTree {
 
         replacee.parent = parent;
         replacee.onMounted?.();
+    }
+
+    public async getUpdatedComponents(): Promise<{ target: string, html: string }[]> {
+        const components: { target: string, html: string }[] = [];
+        while (ComponentTree.repaintQueue.length > 0) {
+            const toUpdate = ComponentTree.repaintQueue.pop()!;
+            components.push({target: toUpdate.id, html: await toUpdate.renderRecursive()});
+        }
+
+        return components;
     }
 }

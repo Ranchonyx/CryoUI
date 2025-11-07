@@ -116,4 +116,17 @@
   padding: 0 var(--component-padding);
   user-select: text;
 }
+
+/* src/UI/Components/FormComponent/FormComponent.module.css */
+.FormComponent_FormComponent {
+  background-color: var(--component-background-color);
+  display: flex;
+  flex-direction: column;
+}
+
+/* src/UI/Components/InputComponent/InputComponent.module.css */
+.InputComponent_InputComponent {
+  display: flex;
+  background-color: var(--component-background-color);
+}
 /*# sourceMappingURL=backend.css.map */

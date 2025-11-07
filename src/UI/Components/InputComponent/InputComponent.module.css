@@ -1,0 +1,4 @@
+.InputComponent {
+    display: flex;
+    background-color: var(--component-background-color);
+}

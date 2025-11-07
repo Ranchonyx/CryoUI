@@ -61,7 +61,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                         e.stopImmediatePropagation();
                         e.preventDefault();
 
-                        const data = Object.fromEntries(Object.entries(((element as HTMLElement)?.dataset || {})));
+                        let data: Record<string, string | undefined> = {};
+
+                        if (e.target instanceof HTMLFormElement)
+                            data = Object.fromEntries((new FormData(e.target as HTMLFormElement) as unknown as Iterable<readonly [PropertyKey, string | undefined]>));
+                        else
+                            data = Object.fromEntries(Object.entries(((element as HTMLElement)?.dataset || {})));
 
                         //Strip data-event and data-target
                         delete data?.event;
