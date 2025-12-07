@@ -10,8 +10,7 @@ import {ParagraphComponent} from "./UI/Components/ParagraphComponent/ParagraphCo
 import {NavbarComponent} from "./UI/Components/NavbarComponent/NavbarComponent.js";
 import {HeaderComponent} from "./UI/Components/HeaderComponent/HeaderComponent.js";
 import {inspect} from "node:util";
-import {FormComponent} from "./UI/Components/FormComponent/FormComponent.js";
-import {InputComponent} from "./UI/Components/InputComponent/InputComponent.js";
+import {TabComponent} from "./UI/Components/TabComponent/TabComponent.js";
 
 const PORT = 8080;
 
@@ -21,11 +20,51 @@ class Validator implements ITokenValidator {
     }
 }
 
-const server = await cryo(new Validator(), {use_cale: false, port: PORT, keepAliveIntervalMs: 5000});
+const server = await cryo(new Validator(), {use_cale: false, port: PORT, keepAliveIntervalMs: 60000});
 
 server.on("session", async (session) => {
     console.log(`New session '${session.id}' connected!`);
     //Main closure for application state on the frontend
+
+    const initialTab = new TabComponent(
+        "Home",
+        new TwoColumnsLayout(
+            new GridLayout(
+                [
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 1 1")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 1 2")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 1 3")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 1 4")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 1 5")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 1 6")),
+                ]
+            ),
+            new FrameComponent([
+                new HeaderComponent("Fantastic Page 1 header right here!"),
+                new ParagraphComponent(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`),
+            ])
+        ));
+
+    const secondTab = new TabComponent(
+        "More",
+        new TwoColumnsLayout(
+            new GridLayout(
+                [
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 2 1")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 2 2")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 2 3")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 2 4")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 2 5")),
+                    new GridItemComponent(new ParagraphComponent("Grid Item Page 2 6")),
+                ]
+            ),
+            new FrameComponent([
+                new HeaderComponent("Fantastic Page 2 header right here!"),
+                new ParagraphComponent(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`),
+            ])
+        ));
+
+
     const app = new AppComponent(
         new NavbarComponent(
             [
@@ -33,31 +72,10 @@ server.on("session", async (session) => {
                 new ParagraphComponent("Btn 2")
             ],
             [
-                new ParagraphComponent("Tab 1"),
-                new ParagraphComponent("Tab 2")
+                initialTab,
+                secondTab
             ]
         ),
-        new TwoColumnsLayout(
-            new GridLayout(
-                [
-                    new GridItemComponent(new ParagraphComponent("Grid Item 1")),
-                    new GridItemComponent(new ParagraphComponent("Grid Item 2")),
-                    new GridItemComponent(new ParagraphComponent("Grid Item 3")),
-                    new GridItemComponent(new ParagraphComponent("Grid Item 4")),
-                    new GridItemComponent(new ParagraphComponent("Grid Item 5")),
-                    new GridItemComponent(new ParagraphComponent("Grid Item 6")),
-                ]
-            ),
-            new FrameComponent([
-                new HeaderComponent("Fantastic fucking header right here!"),
-                new ParagraphComponent(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`),
-                new FormComponent([
-                    new InputComponent("Size of brain", "cockSz", "number"),
-                    new InputComponent("Your name", "urName", "text"),
-                    new InputComponent("Your d.o.b", "urDob", "date"),
-                ])
-            ])
-        )
     );
 
     //Render UI initially and send to client

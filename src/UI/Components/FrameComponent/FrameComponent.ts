@@ -8,7 +8,7 @@ export class FrameComponent extends BaseComponent {
             this.addChild(child);
     }
 
-    public async render(): Promise<string> {
+    protected async render(): Promise<string> {
         const renderedChildren = await Promise.all(this.children.map(child => child.renderRecursive()));
         return renderedChildren.join("");
     }

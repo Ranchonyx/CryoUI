@@ -23,7 +23,7 @@ export class TwoColumnsLayout extends BaseLayout {
         this.addChild(this.right);
     }
 
-    public async render(): Promise<string> {
+    protected async render(): Promise<string> {
         return [await this.left?.renderRecursive(), await this.right?.renderRecursive()].join("");
     }
 

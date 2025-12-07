@@ -1,10 +1,13 @@
-import {cryo, CryoClientWebsocketSession} from "cryo-client-browser"
+import {cryo} from "cryo-client-browser"
 import {ComponentEvent} from "./UI/Base/BaseComponent/BaseComponent.js";
 
 type IncomingMessage = {
     html: string;
     target: string;
     events: ComponentEvent;
+}
+
+function cast<T>(_: unknown): asserts _ is T {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -27,14 +30,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     client.on("message-utf8", (message) => {
-        const {html, target, events} = JSON.parse(message) as IncomingMessage;
+        const {html, target, /*events*/} = JSON.parse(message) as IncomingMessage;
         console.info(`Got UI data from the backend. Rendering '${target}'`)
         const domElement = document.querySelector(`[data-target=${target}]`);
         if (!domElement) {
             throw new Error(`Element with data-target '${target}' not found in DOM!`);
         }
 
-        //Update the found element
         domElement.outerHTML = html;
 
         document.querySelectorAll("[data-event]")
@@ -52,30 +54,47 @@ document.addEventListener("DOMContentLoaded", async () => {
                     return;
                 }
 
-                /*
-                                console.info(`Registered CryoUI event '${eventTypes}' with target '${eventTarget}'`);
-                */
-                const events: string[] = eventTypes.split(",");
-                events.forEach(eventType => {
-                    element.addEventListener(eventType, (e) => {
-                        e.stopImmediatePropagation();
-                        e.preventDefault();
+                eventTypes
+                    .split(",")
+                    .forEach((eventType) => {
+                        element
+                            .addEventListener(eventType, (e) => {
+                                let data: Record<string, any>;
 
-                        let data: Record<string, string | undefined> = {};
+                                switch (eventType) {
+                                    case "mousedown":
+                                        cast<MouseEvent>(e);
+                                        data = {
+                                            button: e.button,
+                                            ctrlKey: e.ctrlKey,
+                                            altKey: e.altKey
+                                        };
+                                        break;
+                                    case "submit":
+                                        data = Object.fromEntries((new FormData(e.target as HTMLFormElement) as unknown as Iterable<readonly [PropertyKey, string | undefined]>));
+                                        break;
+                                    case "keydown":
+                                        cast<KeyboardEvent>(e);
+                                        data = {
+                                            key: e.key,
+                                            altKey: e.altKey,
+                                            shiftKey: e.shiftKey,
+                                            ctrlKey: e.ctrlKey,
+                                            metaKey: e.metaKey,
+                                            code: e.code,
+                                            repeat: e.repeat
+                                        }
+                                        break;
+                                    default:
+                                        data = Object.fromEntries(Object.entries(((element as HTMLElement)?.dataset || {})));
+                                        delete data?.event;
+                                        delete data?.target;
+                                        break;
+                                }
 
-                        if (e.target instanceof HTMLFormElement)
-                            data = Object.fromEntries((new FormData(e.target as HTMLFormElement) as unknown as Iterable<readonly [PropertyKey, string | undefined]>));
-                        else
-                            data = Object.fromEntries(Object.entries(((element as HTMLElement)?.dataset || {})));
-
-                        //Strip data-event and data-target
-                        delete data?.event;
-                        delete data?.target;
-
-                        client.SendUTF8(JSON.stringify({type: eventType, target: eventTarget, data}));
-                        return;
+                                client.SendUTF8(JSON.stringify({type: eventType, target: eventTarget, data}));
+                            })
                     })
-                })
             });
     });
 })

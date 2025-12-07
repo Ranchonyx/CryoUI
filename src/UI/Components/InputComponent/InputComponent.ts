@@ -8,7 +8,7 @@ export class InputComponent extends BaseComponent {
         super("INPUT", className);
     }
 
-    public async render(): Promise<string> {
+    protected async render(): Promise<string> {
         const input = `<input required id="__${this.id}" step="0.01" name="${this.key}" type="${this.type}" />`;
         const label = `<label for="__${this.id}">${this.label}</label>`
         return `${label}${input}`;

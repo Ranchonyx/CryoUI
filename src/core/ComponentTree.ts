@@ -1,16 +1,15 @@
 import {BaseComponent, ComponentEvent} from "../UI/Base/BaseComponent/BaseComponent.js";
-
-//TODO: "dirty"-Flag implementieren. Wird gesetzt wenn die Komponente modifiziert wurde. Umsetzen via Proxies!
+import {AppComponent} from "../UI/Components/AppComponent/AppComponent.js";
 
 export class ComponentTree {
-    public static repaintQueue: BaseComponent[] = [];
+    public static repaintQueue: BaseComponent<any>[] = [];
 
-    public constructor(public root: BaseComponent) {
-        root.onMounted?.();
+    public constructor(private app: AppComponent) {
+        app.onMounted?.();
     }
 
-    public findById(id: string, current: BaseComponent = this.root): BaseComponent | null {
-        return current.findById(id);
+    public findById(id: string, current: BaseComponent = this.app): BaseComponent | null {
+        return current.findChildById(id);
     }
 
     public dispatchEvent(event: ComponentEvent) {
@@ -29,7 +28,7 @@ export class ComponentTree {
     }
 
     public async renderFull(): Promise<string> {
-        return this.root.renderRecursive();
+        return this.app.renderRecursive();
     }
 
     public async renderById(id: string): Promise<string | null> {
@@ -45,7 +44,7 @@ export class ComponentTree {
         return target.renderRecursive();
     }
 
-    public findParentOf(id: string, current: BaseComponent = this.root): BaseComponent | null {
+    public findParentOf(id: string, current: BaseComponent = this.app): BaseComponent<any> | null {
         for (const child of current.children) {
             if (child.id === id)
                 return current;
@@ -58,12 +57,12 @@ export class ComponentTree {
         return null;
     }
 
-    public replaceComponent(id: string, replacee: BaseComponent): void {
+    public replaceComponent(id: string, replacee: BaseComponent<any>): void {
         const parent = this.findParentOf(id);
         if (!parent)
             throw new Error(`Parent component of component '${id}' could not be found!`);
 
-        parent.removeChild(id);
+        parent.removeChildById(id);
         parent.addChild(replacee);
 
         replacee.parent = parent;
@@ -78,5 +77,9 @@ export class ComponentTree {
         }
 
         return components;
+    }
+
+    public getApp(): AppComponent {
+        return this.app;
     }
 }

@@ -1269,16 +1269,16 @@ __name(cryo, "cryo");
 
 // src/core/ComponentTree.ts
 var ComponentTree = class _ComponentTree {
-  constructor(root) {
-    this.root = root;
-    root.onMounted?.();
+  constructor(app) {
+    this.app = app;
+    app.onMounted?.();
   }
   static {
     __name(this, "ComponentTree");
   }
   static repaintQueue = [];
-  findById(id, current = this.root) {
-    return current.findById(id);
+  findById(id, current = this.app) {
+    return current.findChildById(id);
   }
   dispatchEvent(event) {
     const target = this.findById(event.target);
@@ -1293,7 +1293,7 @@ var ComponentTree = class _ComponentTree {
     target.handleEvent(event);
   }
   async renderFull() {
-    return this.root.renderRecursive();
+    return this.app.renderRecursive();
   }
   async renderById(id) {
     const target = this.findById(id);
@@ -1305,7 +1305,7 @@ var ComponentTree = class _ComponentTree {
     }
     return target.renderRecursive();
   }
-  findParentOf(id, current = this.root) {
+  findParentOf(id, current = this.app) {
     for (const child of current.children) {
       if (child.id === id)
         return current;
@@ -1319,7 +1319,7 @@ var ComponentTree = class _ComponentTree {
     const parent = this.findParentOf(id);
     if (!parent)
       throw new Error(`Parent component of component '${id}' could not be found!`);
-    parent.removeChild(id);
+    parent.removeChildById(id);
     parent.addChild(replacee);
     replacee.parent = parent;
     replacee.onMounted?.();
@@ -1331,6 +1331,9 @@ var ComponentTree = class _ComponentTree {
       components.push({ target: toUpdate.id, html: await toUpdate.renderRecursive() });
     }
     return components;
+  }
+  getApp() {
+    return this.app;
   }
 };
 
@@ -1369,14 +1372,26 @@ var BaseComponent2 = class {
   static {
     __name(this, "BaseComponent");
   }
+  /**
+   * The unique ID of this component instance
+   * */
   id;
+  /**
+   * A reference to this component instance's parent
+   * */
   parent;
+  /**
+   * An array containing the children of this component instance
+   * */
   children = [];
+  /**
+   * Optionally, an array of browser-events which should be bound to this component
+   * */
   events = [];
-  dirty = false;
+  /**
+   * This method renders this component with all children recursively
+   * */
   async renderRecursive() {
-    if (this.dirty)
-      this.dirty = false;
     const rendered = await this.render();
     let computedStyle = "";
     let dataEvent = "";
@@ -1389,25 +1404,47 @@ var BaseComponent2 = class {
                     ${rendered}
                 </div>`;
   }
+  /**
+   * Add a child component
+   * */
   addChild(child) {
     child.parent = this;
     this.children.push(child);
   }
-  removeChild(child_id) {
-    this.children = this.children.filter((child) => child_id !== child.id);
+  /**
+   * Remove a child component by its ID
+   * */
+  removeChildById(child_id) {
+    const chIdx = this.children.findIndex((child) => child.id === child_id);
+    if (chIdx < 0)
+      return null;
+    return this.children.splice(chIdx, 1)[0];
   }
-  findById(id) {
+  /**
+   * Recursively find a child component by its ID in all child components recursively
+   * */
+  findChildById(id) {
     if (this.id === id)
       return this;
     for (const child of this.children) {
-      const found = child.findById(id);
+      const found = child.findChildById(id);
       if (found)
         return found;
     }
     return null;
   }
-  repaint() {
+  /**
+   * Forces this component instance to be redrawn
+   * */
+  markDirty() {
     ComponentTree.repaintQueue.push(this);
+  }
+  getApp() {
+    let cur = this;
+    while (cur?.parent !== void 0) {
+      cur = cur?.parent;
+    }
+    return cur;
   }
 };
 
@@ -1416,20 +1453,21 @@ var AppComponent = "AppComponent_AppComponent";
 
 // src/UI/Components/AppComponent/AppComponent.ts
 var AppComponent2 = class extends BaseComponent2 {
-  constructor(navBar, mainContent) {
+  constructor(navbar) {
     super("APP", AppComponent);
-    this.navBar = navBar;
-    this.mainContent = mainContent;
-    this.addChild(navBar);
-    this.addChild(mainContent);
+    this.navbar = navbar;
+    this.addChild(navbar);
   }
   static {
     __name(this, "AppComponent");
   }
   async render() {
-    const renderedNavigation = await this.navBar.renderRecursive();
-    const renderedContent = await this.mainContent.renderRecursive();
+    const renderedNavigation = await this.navbar.renderRecursive();
+    const renderedContent = await this.navbar.getActiveTab().getLayoutOrThrow().renderRecursive();
     return `${renderedNavigation}${renderedContent}`;
+  }
+  getNavbar() {
+    return this.navbar;
   }
 };
 
@@ -1536,19 +1574,15 @@ var GridItemComponent2 = class extends BaseComponent2 {
   static {
     __name(this, "GridItemComponent");
   }
-  events = ["click"];
+  events = ["mousedown"];
   async render() {
     if (this.item)
       return this.item.renderRecursive();
     return "";
   }
   handleEvent(event) {
-    switch (event.type) {
-      case "click":
-        this.item.setContent(`${Math.random()}`);
-        break;
-      default:
-        return;
+    if (event.data.button === 0 /* LEFT */) {
+      this.item.setContent(`${Math.random()}`);
     }
   }
 };
@@ -1575,8 +1609,8 @@ var ParagraphComponent2 = class extends BaseComponent2 {
 
 // src/UI/Components/NavbarComponent/NavbarComponent.module.css
 var NavbarComponent = "NavbarComponent_NavbarComponent";
-var tabs = "NavbarComponent_tabs";
 var buttons = "NavbarComponent_buttons";
+var tabs = "NavbarComponent_tabs";
 
 // src/UI/Components/NavbarComponent/NavbarComponent.ts
 var NavbarComponent2 = class extends BaseComponent2 {
@@ -1584,6 +1618,8 @@ var NavbarComponent2 = class extends BaseComponent2 {
     super("NAVBAR", NavbarComponent);
     this.buttons = buttons2;
     this.tabs = tabs2;
+    if (tabs2.length > 0)
+      tabs2[0].active = true;
     for (const child of [...this.buttons, ...this.tabs])
       this.addChild(child);
   }
@@ -1604,7 +1640,7 @@ var NavbarComponent2 = class extends BaseComponent2 {
   }
   removeButton(target_id) {
     this.buttons = this.buttons.filter((button) => button.id !== target_id);
-    this.removeChild(target_id);
+    this.removeChildById(target_id);
   }
   addTab(tab) {
     this.tabs.push(tab);
@@ -1612,7 +1648,13 @@ var NavbarComponent2 = class extends BaseComponent2 {
   }
   removeTab(target_id) {
     this.tabs = this.tabs.filter((tab) => tab.id !== target_id);
-    this.removeChild(target_id);
+    this.removeChildById(target_id);
+  }
+  getTabs() {
+    return this.tabs;
+  }
+  getActiveTab() {
+    return this.tabs.find((tab) => tab.active);
   }
   handleEvent(event) {
     for (const child of this.children) {
@@ -1645,61 +1687,51 @@ var HeaderComponent2 = class extends BaseComponent2 {
 // src/backend.ts
 import { inspect } from "node:util";
 
-// src/UI/Components/FormComponent/FormComponent.module.css
-var FormComponent = "FormComponent_FormComponent";
+// src/UI/Components/TabComponent/TabComponent.module.css
+var TabComponent = "TabComponent_TabComponent";
 
-// src/UI/Components/FormComponent/FormComponent.ts
-var FormComponent2 = class extends BaseComponent2 {
-  constructor(inputs) {
-    super("FORM", FormComponent);
-    this.inputs = inputs;
-    for (const input of inputs)
-      this.addChild(input);
+// src/UI/Components/TabComponent/TabComponent.ts
+var TabComponent2 = class extends BaseComponent2 {
+  constructor(text, heldLayout) {
+    super("TAB", TabComponent);
+    this.text = text;
+    this.heldLayout = heldLayout;
+    if (this.heldLayout)
+      this.addChild(this.heldLayout);
   }
   static {
-    __name(this, "FormComponent");
+    __name(this, "TabComponent");
   }
-  events = ["submit"];
+  events = ["mousedown"];
+  active = false;
   async render() {
-    const rendered = await Promise.all(this.children.map((child) => child.renderRecursive()));
-    const renderedSubmissiveButton = `<input type="submit" value="Submit"/>`;
-    return `<form>${rendered.join("")}${renderedSubmissiveButton}></form>`;
+    return `<div data-active="${this.active}">${this.text}</div>`;
+  }
+  setLayout(layout) {
+    this.heldLayout?.onDestroyed?.();
+    this.children = [];
+    this.heldLayout = layout;
+    this.addChild(layout);
+    this.heldLayout?.onMounted?.();
+  }
+  tryGetLayout() {
+    if (!this.heldLayout)
+      return null;
+    return this.heldLayout;
+  }
+  getLayoutOrThrow() {
+    if (!this.heldLayout)
+      throw new Error("Unable to get layout. It has not been set.");
+    return this.heldLayout;
   }
   handleEvent(event) {
-    switch (event.type) {
-      case "submit":
-        let cur = this;
-        while (cur?.parent !== void 0) {
-          cur = cur?.parent;
-        }
-        const frame = cur.children.find((child) => child instanceof TwoColumnsLayout2).children.find((child) => child instanceof FrameComponent);
-        frame?.addChild(new ParagraphComponent2(`YOUR COCK IS ${event.data.cockSz} UNITS OF MEASUREMENTS BIG.`));
-        frame?.repaint();
-        break;
-      default:
+    if (event.data.button === 0 /* LEFT */) {
+      if (this.active)
         return;
+      this.parent?.getTabs().forEach((tab) => tab.active = false);
+      this.active = true;
+      this.getApp().markDirty();
     }
-  }
-};
-
-// src/UI/Components/InputComponent/InputComponent.module.css
-var InputComponent = "InputComponent_InputComponent";
-
-// src/UI/Components/InputComponent/InputComponent.ts
-var InputComponent2 = class extends BaseComponent2 {
-  constructor(label, key, type = "text") {
-    super("INPUT", InputComponent);
-    this.label = label;
-    this.key = key;
-    this.type = type;
-  }
-  static {
-    __name(this, "InputComponent");
-  }
-  async render() {
-    const input = `<input required id="__${this.id}" step="0.01" name="${this.key}" type="${this.type}" />`;
-    const label = `<label for="__${this.id}">${this.label}</label>`;
-    return `${label}${input}`;
   }
 };
 
@@ -1713,9 +1745,47 @@ var Validator = class {
     return token === "test";
   }
 };
-var server = await cryo(new Validator(), { use_cale: false, port: PORT, keepAliveIntervalMs: 5e3 });
+var server = await cryo(new Validator(), { use_cale: false, port: PORT, keepAliveIntervalMs: 6e4 });
 server.on("session", async (session) => {
   console.log(`New session '${session.id}' connected!`);
+  const initialTab = new TabComponent2(
+    "Home",
+    new TwoColumnsLayout2(
+      new GridLayout2(
+        [
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 1 1")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 1 2")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 1 3")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 1 4")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 1 5")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 1 6"))
+        ]
+      ),
+      new FrameComponent([
+        new HeaderComponent2("Fantastic Page 1 header right here!"),
+        new ParagraphComponent2(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`)
+      ])
+    )
+  );
+  const secondTab = new TabComponent2(
+    "More",
+    new TwoColumnsLayout2(
+      new GridLayout2(
+        [
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 2 1")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 2 2")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 2 3")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 2 4")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 2 5")),
+          new GridItemComponent2(new ParagraphComponent2("Grid Item Page 2 6"))
+        ]
+      ),
+      new FrameComponent([
+        new HeaderComponent2("Fantastic Page 2 header right here!"),
+        new ParagraphComponent2(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`)
+      ])
+    )
+  );
   const app = new AppComponent2(
     new NavbarComponent2(
       [
@@ -1723,30 +1793,9 @@ server.on("session", async (session) => {
         new ParagraphComponent2("Btn 2")
       ],
       [
-        new ParagraphComponent2("Tab 1"),
-        new ParagraphComponent2("Tab 2")
+        initialTab,
+        secondTab
       ]
-    ),
-    new TwoColumnsLayout2(
-      new GridLayout2(
-        [
-          new GridItemComponent2(new ParagraphComponent2("Grid Item 1")),
-          new GridItemComponent2(new ParagraphComponent2("Grid Item 2")),
-          new GridItemComponent2(new ParagraphComponent2("Grid Item 3")),
-          new GridItemComponent2(new ParagraphComponent2("Grid Item 4")),
-          new GridItemComponent2(new ParagraphComponent2("Grid Item 5")),
-          new GridItemComponent2(new ParagraphComponent2("Grid Item 6"))
-        ]
-      ),
-      new FrameComponent([
-        new HeaderComponent2("Fantastic fucking header right here!"),
-        new ParagraphComponent2(`Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.`),
-        new FormComponent2([
-          new InputComponent2("Size of cock", "cockSz", "number"),
-          new InputComponent2("Your name", "urName", "text"),
-          new InputComponent2("Your d.o.b", "urDob", "date")
-        ])
-      ])
     )
   );
   const tree = new ComponentTree(app);

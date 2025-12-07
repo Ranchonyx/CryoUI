@@ -1,0 +1,18 @@
+.TabComponent {
+    color: var(--tab-color);
+    min-width: 10rem;
+    text-align: left;
+    min-height: 2.5rem;
+}
+
+.TabComponent:has(> div[data-active="true"]) {
+    background-color: var(--tab-background);
+}
+
+.TabComponent:has(> div[data-active="false"]) {
+    background-color: var(--color-gray);
+}
+
+.TabComponent:hover {
+    background-color: var(--tab-hover-background);
+}

@@ -76,31 +76,25 @@
   flex-direction: row;
   gap: 1rem;
   width: 100%;
-  border-bottom: 1px solid black;
-  align-items: center;
   justify-content: space-between;
   background-color: var(--navbar-background-color);
   color: var(--text-on-dark);
   padding: var(--navbar-padding);
+  align-items: stretch;
 }
-.NavbarComponent_tabs,
-.NavbarComponent_buttons {
+.NavbarComponent_buttons,
+.NavbarComponent_tabs {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
   flex-direction: row;
-  align-items: center;
   cursor: pointer;
   transition: background-color 0.2s;
   background-color: var(--navbar-item-background-color);
   color: var(--text-on-dark);
-}
-.NavbarComponent_tabs > * {
-  min-width: 10rem;
-  background-color: var(--tab-background);
-}
-.NavbarComponent_tabs > *:hover {
-  background-color: var(--tab-hover-background);
+  margin-top: 0;
+  padding-top: 0;
+  align-items: stretch;
 }
 .NavbarComponent_buttons > * {
   min-width: 2.5rem;
@@ -117,16 +111,20 @@
   user-select: text;
 }
 
-/* src/UI/Components/FormComponent/FormComponent.module.css */
-.FormComponent_FormComponent {
-  background-color: var(--component-background-color);
-  display: flex;
-  flex-direction: column;
+/* src/UI/Components/TabComponent/TabComponent.module.css */
+.TabComponent_TabComponent {
+  color: var(--tab-color);
+  min-width: 10rem;
+  text-align: left;
+  min-height: 2.5rem;
 }
-
-/* src/UI/Components/InputComponent/InputComponent.module.css */
-.InputComponent_InputComponent {
-  display: flex;
-  background-color: var(--component-background-color);
+.TabComponent_TabComponent:has(> div[data-active=true]) {
+  background-color: var(--tab-background);
+}
+.TabComponent_TabComponent:has(> div[data-active=false]) {
+  background-color: var(--color-gray);
+}
+.TabComponent_TabComponent:hover {
+  background-color: var(--tab-hover-background);
 }
 /*# sourceMappingURL=backend.css.map */

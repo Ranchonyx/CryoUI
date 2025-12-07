@@ -6,7 +6,7 @@ export class HeaderComponent extends BaseComponent {
         super("HEADER", className);
     }
 
-    public async render(): Promise<string> {
+    protected async render(): Promise<string> {
         return `<h${this.size}>${this.content}</h${this.size}>`;
     }
 

@@ -6,7 +6,7 @@ export class ParagraphComponent extends BaseComponent {
         super("PARAGRAPH", className);
     }
 
-    public async render(): Promise<string> {
+    protected async render(): Promise<string> {
         return `<p>${this.content || ""}</p>`;
     }
 
